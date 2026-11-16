@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Lokalna transkrypcja mowy na duży ekran. Whisper large-v3-turbo na Apple Silicon.">
+  <title>Speaker Screen — słowa na żywo</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h8m4 0h4M4 17h3m4 0h9"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-translate" viewBox="0 0 24 24"><path d="M3 5h11M8 3v2m4 0c0 5-3 9-8 11m1-9c1 4 4 7 8 9m1 5 4-11 4 11m-7-3h6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5v16M12 5C9 3 5 3 2 4v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-3-1-7-1-10 1Z"/></symbol>
+    <symbol id="i-cast" viewBox="0 0 24 24"><path d="M3 8V4h18v16H11M3 12a9 9 0 0 1 9 9M3 16a5 5 0 0 1 5 5"/><circle cx="3" cy="21" r="1" fill="currentColor" stroke="none"/></symbol>
+  </svg>
+
+  <header class="header chrome">
+    <a class="brand" href="/" aria-label="Speaker Screen — strona główna">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span>speaker<span class="brand-secondary">screen</span><span class="brand-period">.</span></span>
+    </a>
+    <div class="header-right"><span class="local-label"><span class="local-dot"></span> LOKALNIE. PRYWATNIE.</span><div class="model-badge" id="model-badge"><span class="status-dot"></span><span id="model-label">Łączenie z modelem</span><span class="model-tag">TURBO</span></div><div class="model-badge" id="translation-badge"><span class="status-dot"></span><span>TranslateGemma 4B</span></div></div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="stage-eyebrow chrome"><span class="eyebrow-line"></span><span id="stage-label">TWÓJ GŁOS, W CENTRUM UWAGI</span></div>
+    <div class="empty-state" id="empty-state">
+      <h1>Ty mówisz.<br><span>Słowa zostają.</span></h1>
+      <p>Zamień swój głos w napisy na żywo.<br>Tłumaczenie dla publiczności. Każde zdanie zostaje w historii.</p>
+      <button class="demo-link" id="demo-button">Zobacz, jak to działa <svg><use href="#i-arrow"/></svg></button>
+    </div>
+    <div class="caption-area" id="caption-area" hidden>
+      <section class="source-panel" id="source-panel" aria-labelledby="source-heading">
+        <div class="feed-heading"><h2 id="source-heading">ORYGINAŁ <span class="language-pill" id="source-language">AUTO</span></h2><span class="feed-description">słowa mówcy</span></div>
+        <div class="transcript-feed source-feed" id="source-feed" tabindex="0" role="log" aria-label="Historia oryginalnych wypowiedzi" aria-live="off"><div id="source-text"></div></div>
+      </section>
+      <section class="translation-panel" id="translation-panel" aria-labelledby="translation-heading">
+        <div class="feed-heading"><h2 id="translation-heading">TŁUMACZENIE <span class="language-pill" id="translation-language">EN</span></h2><button class="follow-button" id="follow-button" title="Zatrzymaj przewijanie, aby spokojnie przeczytać tekst">Wstrzymaj przewijanie <span aria-hidden="true">Ⅱ</span></button></div>
+        <div class="transcript-feed translation-feed" id="translation-feed" tabindex="0" role="log" aria-label="Historia tłumaczeń dla publiczności" aria-live="off"><div id="translation-text"></div></div>
+        <div class="translation-progress" id="translation-progress" role="status">Tłumaczenie pojawi się tutaj.</div>
+      </section>
+      <p class="empty-output" id="empty-output" hidden>Włącz tłumaczenie w panelu sterowania, aby pokazać je na tym ekranie.</p>
+      <span class="sentence-label chrome" id="sentence-label">TEKST POZOSTAJE W HISTORII SESJI</span>
+    </div>
+    <div class="listening-state" id="listening-state" hidden><span class="listening-orb"></span><h2>Słucham.</h2><p>Zacznij mówić. Twoje słowa pojawią się tutaj.</p></div>
+    <div class="stage-bottom chrome"><span id="privacy-note">Dźwięk zostaje na Twoim komputerze.</span><span id="sentence-count">EKRAN GOTOWY NA TWOJE SŁOWA</span></div>
+  </main>
+
+  <div class="notice chrome" id="notice" role="status" hidden><span id="notice-text"></span><button id="dismiss-notice" class="icon-button" aria-label="Zamknij komunikat"><svg><use href="#i-close"/></svg></button></div>
+
+  <footer class="footer chrome" id="controls">
+    <div class="session-meta"><div class="session-state"><span class="status-dot" id="session-dot"></span><span id="session-label">Gotowy do startu</span><span class="demo-badge" id="demo-badge" hidden>DEMO</span></div><div class="translation-controls"><svg><use href="#i-translate"/></svg><label for="target-language">Tłumaczenie</label><select id="target-language" aria-label="Język tłumaczenia" title="Język docelowy dla nowej sesji"><option value="en" selected>English</option><option value="pl">Polski</option><option value="de">Deutsch</option><option value="uk">Українська</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="pt">Português</option><option value="cs">Čeština</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ar">العربية</option><option value="off">Wyłączone</option></select><svg class="target-chevron"><use href="#i-chevron"/></svg></div><div class="session-clock"><span id="session-time">00:00</span><span class="meta-divider">/</span><span id="latency">bez pośpiechu, bez rozpraszania</span></div></div>
+    <div class="control-bar">
+      <div class="input-controls">
+        <div class="select-field mic-field"><svg><use href="#i-mic"/></svg><div><label for="microphone">WEJŚCIE AUDIO</label><select id="microphone"><option value="">Domyślny mikrofon</option></select></div><svg class="select-chevron"><use href="#i-chevron"/></svg></div>
+        <div class="control-divider"></div>
+        <div class="select-field language-field"><span class="language-icon" aria-hidden="true">A<span>文</span></span><div><label for="language">JĘZYK MOWY</label><select id="language"><option value="auto" selected>Wykryj automatycznie</option><option value="pl">Polski</option><option value="en">English</option><option value="de">Deutsch</option><option value="uk">Українська</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="pt">Português</option><option value="cs">Čeština</option><option value="sk">Slovenčina</option><option value="nl">Nederlands</option><option value="sv">Svenska</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ko">한국어</option><option value="ar">العربية</option><option value="tr">Türkçe</option><option value="hi">हिन्दी</option><option value="ru">Русский</option></select></div><svg class="select-chevron"><use href="#i-chevron"/></svg></div>
+      </div>
+      <button id="start-button" class="start-button" disabled><svg id="start-icon"><use href="#i-mic"/></svg><span id="start-label">Łączenie…</span><span class="shortcut">␣</span></button>
+      <div class="view-controls"><button class="icon-button" id="clear-button" title="Wyczyść napisy" aria-label="Wyczyść napisy"><svg><use href="#i-trash"/></svg></button><button class="icon-button" id="settings-button" title="Ustawienia" aria-label="Ustawienia wyświetlania" aria-expanded="false" aria-controls="settings"><svg><use href="#i-sliders"/></svg></button><button class="icon-button" id="sermon-button" title="Kazanie i terminologia" aria-label="Kazanie i terminologia" aria-expanded="false" aria-controls="sermon-settings"><svg><use href="#i-book"/></svg></button><button class="icon-button cast-button" id="cast-button" title="Ekrany i projekcja" aria-label="Ekrany i projekcja" aria-expanded="false" aria-controls="display-settings"><svg><use href="#i-cast"/></svg><span id="cast-count" hidden></span></button><div class="control-divider"></div><button class="fullscreen-button" id="fullscreen-button" title="Pełny ekran (F)"><svg><use href="#i-expand"/></svg><span>Pełny ekran</span><kbd>F</kbd></button></div>
+    </div>
+    <div class="footer-bottom"><span>STWORZONE DO SŁUCHANIA. ZAPROJEKTOWANE DO CZYTANIA.</span><span><span class="key-hint"><kbd>spacja</kbd> start / stop</span><span class="key-hint"><kbd>F</kbd> pełny ekran</span></span></div>
+  </footer>
+
+  <aside class="settings" id="settings" popover>
+    <div class="settings-heading"><h2>Dopasuj ekran</h2><button class="icon-button" popovertarget="settings" popovertargetaction="hide" aria-label="Zamknij ustawienia"><svg><use href="#i-close"/></svg></button></div>
+    <label class="range-label" for="font-size">Rozmiar tłumaczenia <output id="font-size-value">44 px</output></label><input id="font-size" type="range" min="32" max="88" step="4" value="44"><div class="range-hints"><span>Subtelniej</span><span>Na duży rzutnik</span></div>
+    <label class="range-label" for="source-size">Rozmiar oryginału <output id="source-size-value">44 px</output></label><input id="source-size" type="range" min="32" max="88" step="4" value="44"><p class="setting-help">Rozmiary zmieniasz niezależnie. Szerokości kolumn dopasowują się do proporcji czcionek.</p>
+    <label class="range-label" for="noise-gate">Próg mikrofonu <output id="noise-gate-value">8</output></label><input id="noise-gate" type="range" min="2" max="30" value="8"><p class="setting-help">Zwiększ w hałaśliwym otoczeniu. Zmniejsz, jeśli cicha mowa nie jest wykrywana. Zmiana od następnego startu.</p>
+    <div class="settings-note"><svg><use href="#i-check"/></svg> Arial · wysoki kontrast · czarne tło</div>
+  </aside>
+
+  <aside class="settings sermon-settings chrome" id="sermon-settings" popover>
+    <div class="settings-heading"><h2>Kazanie i terminologia</h2><button class="icon-button" popovertarget="sermon-settings" popovertargetaction="hide" aria-label="Zamknij ustawienia kazania"><svg><use href="#i-close"/></svg></button></div>
+    <fieldset id="sermon-fields">
+      <label class="sermon-toggle"><input id="sermon-enabled" type="checkbox" checked> Używaj kontekstu kazania</label>
+      <p class="setting-help">Podpowiada nazwy biblijne i terminologię. Ustaw przed rozpoczęciem nasłuchu.</p>
+      <label class="display-label" for="polish-edition">Terminologia polska</label>
+      <select class="display-select" id="polish-edition"><option value="bw">Biblia Warszawska</option><option value="ubg">UBG — Uwspółcześniona Biblia Gdańska</option></select>
+      <label class="display-label" for="english-edition">Terminologia angielska</label>
+      <select class="display-select" id="english-edition"><option value="kjv">King James Version</option><option value="mkjv">Modern King James Version</option></select>
+      <p class="setting-help">Przekład jest wskazówką terminologii. Parafrazy i własne słowa mówcy pozostają tłumaczone zgodnie z wypowiedzią.</p>
+      <label class="display-label" for="sermon-names">Nazwy na dziś <span>(opcjonalnie)</span></label>
+      <input class="sermon-text" id="sermon-names" type="text" maxlength="240" placeholder="np. Melchizedek, Habakuk, List do Hebrajczyków">
+      <p class="setting-help">Krótka lista nazw dla rozpoznawania mowy, w języku mówcy.</p>
+      <label class="display-label" for="sermon-glossary">Własny słownik PL = EN <span>(opcjonalnie)</span></label>
+      <textarea class="sermon-text" id="sermon-glossary" rows="3" maxlength="1000" placeholder="upamiętanie = repentance&#10;przymierze = covenant" spellcheck="false"></textarea>
+      <p class="setting-help">Do 12 wpisów, jeden w wierszu. Działa w obu kierunkach PL ↔ EN. Dopasowane wpisy mają pierwszeństwo przed podpowiedziami domyślnymi.</p>
+    </fieldset>
+    <p class="sermon-footnote">Podpowiedzi pomagają modelowi, ale nie gwarantują bezbłędnego tłumaczenia ani dosłownego cytatu z wybranego przekładu.</p>
+  </aside>
+
+  <div class="fullscreen-hint" id="fullscreen-hint" hidden>Naciśnij <kbd>F</kbd>, aby wrócić <span>·</span> <kbd>spacja</kbd> start / stop</div>
+  <aside class="settings display-settings chrome" id="display-settings" popover>
+    <div class="settings-heading"><h2>Ekrany i projekcja</h2><button class="icon-button" popovertarget="display-settings" popovertargetaction="hide" aria-label="Zamknij wybór ekranów"><svg><use href="#i-close"/></svg></button></div>
+    <label class="display-label" for="main-output">Treść w tym oknie</label>
+    <select class="display-select" id="main-output"><option value="both">Oryginał i tłumaczenie</option><option value="source">Tylko oryginał</option><option value="translation">Tylko tłumaczenie</option></select>
+    <button class="display-secondary" id="main-output-fullscreen"><svg><use href="#i-expand"/></svg> Pełny ekran w tym oknie</button>
+    <div class="display-section-title">DODATKOWE OKNO PROJEKCJI</div>
+    <label class="display-label" for="external-output">Co wyświetlić</label>
+    <select class="display-select" id="external-output"><option value="translation">Tylko tłumaczenie</option><option value="source">Tylko oryginał</option><option value="both">Oryginał i tłumaczenie</option></select>
+    <label class="display-label" for="output-monitor">Gdzie wyświetlić</label>
+    <select class="display-select" id="output-monitor"><option value="manual">Osobne okno — przeniosę ręcznie</option></select>
+    <button class="display-secondary" id="detect-monitors"><svg><use href="#i-cast"/></svg> Wykryj monitory</button>
+    <p class="setting-help" id="display-help" role="status">Możesz otworzyć osobne okno i przenieść je na drugi monitor lub rzutnik.</p>
+    <button class="display-open" id="open-output">Otwórz okno projekcji <svg><use href="#i-arrow"/></svg></button>
+    <div class="open-outputs" id="open-outputs" hidden><div class="display-section-title">OTWARTE PROJEKCJE</div><div id="output-list"></div></div>
+  </aside>
+  <div class="output-toolbar" id="output-toolbar" hidden>
+    <span class="output-connection" id="output-connection" role="status">Łączenie z panelem…</span>
+    <select id="viewer-output" aria-label="Treść tego ekranu"><option value="both">Oba teksty</option><option value="source">Oryginał</option><option value="translation">Tłumaczenie</option></select>
+    <button id="viewer-follow" title="Wstrzymaj lub wznów przewijanie">Wstrzymaj</button>
+    <button id="viewer-fullscreen"><svg><use href="#i-expand"/></svg> Pełny ekran</button>
+  </div>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>
